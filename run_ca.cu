@@ -21,7 +21,7 @@ struct randomInts{
         randomInts(int A):a(A){}
     
         __host__ __device__
-        int operator()(){ return (int)std::floor((float)(a+1)*rand()/RAND_MAX); }
+        int operator()(){ return (int)std::floor((float)(a)*rand()/RAND_MAX); }
 };
 
 // Print thrust vector values to console
@@ -42,47 +42,56 @@ void pngPrinter(T& x,int n, I& image)
 
 int main(int argc, char* argv[])
 {    
-    int range = 1;              // Cell neighbour view range
+    int range  = 3;              // Cell neighbour view range (default for now)
     int length = atoi(argv[1]); // Length of cell array
-    int rule=atoi(argv[2]);     // Rule number
-    int steps=atoi(argv[3]);    // Number of update steps
+    int steps  = atoi(argv[2]);  // Number of update steps
+    int states = atoi(argv[3]); // Number of states
+    int rule   = atoi(argv[4]);   // Rule number
+    
+    int statePerms = pow(states,range);
+
+    if (rule >=  pow(states,statePerms))
+    {
+        std::cout << "Rule outside range\n";
+        return 999; 
+    }
 
     // PNG image storage    
     png::image< png::gray_pixel > image(length,steps);
 
     // Generate random initial cell state 
     thrust::host_vector<int> init(length);
-    thrust::generate(init.begin(),init.end(),randomInts(range));
+    thrust::generate(init.begin(),init.end(),randomInts(states));
     
-    // Ruleset matrix
-    thrust::host_vector<int> rules(8);
+    // Ruleset array
+    thrust::host_vector<int> rules(statePerms);
     int x = rule;
-    for(int i=0;i<8;++i)
+    for(int i=0; i<statePerms; ++i)
     {
-        rules[i] = x%(range+1);
-        x = x >> 1;
+        rules[i] = x%(states);
+        x = (int)floor((double)x/(double)states);
     }
     consolePrinter(rules,"Ruleset:|","|");
     
     // Load ruleset into device vector
-    thrust::device_vector<int> d_rules(8);
+    thrust::device_vector<int> d_rules(statePerms);
     thrust::copy(rules.begin(),rules.end(),d_rules.begin());
 
     // Colour transformation from states number to 8-bit grayscale
     thrust::device_vector<int> clr(length);
-    thrust::fill(clr.begin(),clr.end(),255);
+    thrust::fill(clr.begin(),clr.end(),255/(states-1));
 
     // Vector to copy to PNG image
     thrust::device_vector<int> outVec(length);
 
     // Initialize functor
-    caUpdate CA(thrust::raw_pointer_cast(&d_rules[0]));
+    caUpdate CA(thrust::raw_pointer_cast(&d_rules[0]),states);
     
     // Time step counter
     int counter = 0;
 
     // Initialize CA object
-    ca1d caa(length,2,CA);
+    ca1d caa(length,states,CA);
     caa.loadInitial(init);
 
     while(counter < steps){
@@ -100,7 +109,7 @@ int main(int argc, char* argv[])
     }
     
     // Save PNG data
-    image.write("rule_"+std::string(argv[2])+".png");
+    image.write("pngs/rule_"+std::string(argv[4])+"_"+std::string(argv[3])+".png");
 
     return 0;
 }

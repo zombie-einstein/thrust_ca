@@ -14,5 +14,5 @@ nvcc -o <executable_name> ca.o run_ca.o `libpng-config --ldflags`
 
 Command line arguments are:
 ```
-./<executable_name> <ca_array-size> <rule_number> <number_of_steps>
+./<executable_name> <ca_array-size> <number_of_steps> <number_of_states> <rule_number>
 ```

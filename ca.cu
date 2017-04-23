@@ -9,21 +9,22 @@
 struct caUpdate{
     
     private:
-    const int* ruleArr;
+        const int* ruleArr;
+        int states;
 
     public:
-    caUpdate(){}
-    caUpdate(int* x):ruleArr(x){}
-    
-    template <class Tuple>
-    __device__
-    void operator()(Tuple t)
-    {
-        int a = thrust::get<0>(t);
-        int b = thrust::get<1>(t);
-        int c = thrust::get<2>(t);
-        thrust::get<3>(t) = *(ruleArr+b+2*a+4*c);
-    }
+        caUpdate(){}
+        caUpdate(int* x,int s):ruleArr(x),states(s){}
+        
+        template <class Tuple>
+        __device__
+        void operator()(Tuple t)
+        {
+            int a = thrust::get<0>(t);
+            int b = thrust::get<1>(t);
+            int c = thrust::get<2>(t);
+            thrust::get<3>(t) = *(ruleArr+b+states*a+states*states*c);
+        }
 };
 
 class ca1d{
