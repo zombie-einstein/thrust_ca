@@ -47,7 +47,7 @@ class ca1d{
             lt.resize(length);
             rt.resize(length);
             update = ca;
-            // Load maps to neighbouring cells
+            // Load maps to neighbouring cells (wrapping ends)
             thrust::counting_iterator<int> it(0);
             lt[0] = length-1;
             thrust::copy(it,it+length,lt.begin()+1);
