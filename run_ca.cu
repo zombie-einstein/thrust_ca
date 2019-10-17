@@ -15,7 +15,7 @@
 struct randomInts{
 
     private:
-        const float a;
+        const int a;
     
     public:
         randomInts(int A):a(A){}
@@ -42,34 +42,46 @@ void pngPrinter(T& x,int n, I& image)
 
 int main(int argc, char* argv[])
 {    
-    int range  = 3;              // Cell neighbour view range (default for now)
-    int length = atoi(argv[1]); // Length of cell array
-    int steps  = atoi(argv[2]);  // Number of update steps
+    int range  = 3;             // Cell neighbour view range (default for now)
     int states = atoi(argv[3]); // Number of states
-    int rule   = atoi(argv[4]);   // Rule number
+    int length = atoi(argv[1]); // Length of cell array
+    int steps  = atoi(argv[2]); // Number of update steps
     
-    int statePerms = pow(states,range);
+    // Rule number: The possible values for this turns out 
+    // to grow very quickly considering for example for
+    // three cells only this is already n^(n^3)
+    unsigned long int rule = std::stol(argv[4]); 
+    
+    int statePerms = pow(states,range); // Number of possible permutations of cells
 
-    if (rule >=  pow(states,statePerms))
+    if ( rule >=  pow(states,statePerms))
     {
         std::cout << "Rule outside range\n";
-        return 999; 
+        return 10; 
     }
 
     // PNG image storage    
     png::image< png::gray_pixel > image(length,steps);
 
-    // Generate random initial cell state 
     thrust::host_vector<int> init(length);
+    
+    // Generate random initial cell states on host
     thrust::generate(init.begin(),init.end(),randomInts(states));
     
-    // Ruleset array
+    /* BELOW CAN SET SPECIFIC CELLS (SET AS ARGUMENT)
+    thrust::fill(init.begin(),init.end(),0);
+    int mid = length/2;
+    init[mid] = 1;
+    init[mid+2] = 1;
+    */
+
+    // Populate ruleset vector on host
     thrust::host_vector<int> rules(statePerms);
-    int x = rule;
+    unsigned long int x = rule;
     for(int i=0; i<statePerms; ++i)
     {
-        rules[i] = x%(states);
-        x = (int)floor((double)x/(double)states);
+        rules[i] = x % states;
+        x = x / (unsigned long int)states;
     }
     consolePrinter(rules,"Ruleset:|","|");
     
@@ -80,9 +92,6 @@ int main(int argc, char* argv[])
     // Colour transformation from states number to 8-bit grayscale
     thrust::device_vector<int> clr(length);
     thrust::fill(clr.begin(),clr.end(),255/(states-1));
-
-    // Vector to copy to PNG image
-    thrust::device_vector<int> outVec(length);
 
     // Initialize functor
     caUpdate CA(thrust::raw_pointer_cast(&d_rules[0]),states);
@@ -100,7 +109,7 @@ int main(int argc, char* argv[])
         caa.updateFront();
         
         // Update colour value vector and copy to PNG
-        thrust::transform(caa.ft.begin(),caa.ft.end(),clr.begin(),outVec.begin(),thrust::multiplies<int>());
+        thrust::transform(caa.ft.begin(),caa.ft.end(),clr.begin(),outVec.begin(),thrust::multiplies<short int>());
         pngPrinter(outVec,counter,image);
 
         // Swap front and back, increment

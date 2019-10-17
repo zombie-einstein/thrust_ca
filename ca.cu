@@ -14,15 +14,15 @@ struct caUpdate{
 
     public:
         caUpdate(){}
-        caUpdate(int* x,int s):ruleArr(x),states(s){}
+        caUpdate(int* x, int s):ruleArr(x),states(s){}
         
         template <class Tuple>
         __device__
         void operator()(Tuple t)
         {
-            int a = thrust::get<0>(t);
-            int b = thrust::get<1>(t);
-            int c = thrust::get<2>(t);
+            int a = thrust::get<0>(t);  // Left cell 
+            int b = thrust::get<1>(t);  // This cell
+            int c = thrust::get<2>(t);  // Right cell
             thrust::get<3>(t) = *(ruleArr+b+states*a+states*states*c);
         }
 };
@@ -31,17 +31,17 @@ class ca1d{
 
     typedef thrust::device_vector<int> intDvec; 
 
-        int length;                       // Array length of CA
-        int states;                       // CA number of states
-        intDvec bk;                       // Back (past) array
-        intDvec rt;                       // Right neighbour map
-        intDvec lt;                       // Left neighbour map
-        caUpdate update;                  // Update functor
+        int length;      // Array length of CA
+        int states;      // CA number of states
+        intDvec bk;      // Back (past) array
+        intDvec rt;      // Right neighbour map
+        intDvec lt;      // Left neighbour map
+        caUpdate update; // Update functor
     
     public:
-        intDvec ft;                       // Front (current) array
+        intDvec ft;      // Front (current) array
 
-        ca1d(int l,int s,caUpdate ca):length(l),states(s)
+        ca1d(int l, int s, caUpdate ca):length(l),states(s)
         {
             bk.resize(length);
             ft.resize(length);

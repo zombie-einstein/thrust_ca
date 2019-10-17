@@ -5,7 +5,7 @@ Runs 1-D cellular automata on GPU using thrust, saves results visually to PNG fi
 
 Compile using:
 ```
-nvcc -c ca.cu run_ca.cu `libpng-config --cflags`
+nvcc -c -std=c++11 ca.cu run_ca.cu `libpng-config --cflags`
 ```
 And link using:
 ```
